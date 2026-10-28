@@ -44,7 +44,8 @@ def equilibrium_vs_K(df, out):
     done = done[done.server_lr == 1.0]
     cols = [("eq_sharp_norm", "global sharpness · lr/2"),
             ("eq_client_norm", "max client sharpness · lr/2"),
-            ("eq_edge", "round-map edge  tau_max/2")]
+            ("eq_edge", "round-map edge  tau_max/2"),
+            ("eq_path_edge", "path round-map edge  tau_path/2")]
     cols = [(c, t) for c, t in cols if done[c].notna().any()]
     if not cols:
         return
@@ -63,6 +64,29 @@ def equilibrium_vs_K(df, out):
     plt.close(fig)
 
 
+def edge_trajectories(df, out):
+    sub = df[df.eq_tau_path.notna() & (df.seed == df.seed.min())]
+    if sub.empty:
+        return
+    alphas = sorted(sub.alpha.unique(), reverse=True)
+    fig, axes = plt.subplots(1, len(alphas), figsize=(5 * len(alphas), 4), sharey=True, squeeze=False)
+    for ax, a in zip(axes[0], alphas):
+        for _, r in sub[sub.alpha == a].sort_values(["lr", "local_steps"]).iterrows():
+            m = load_metrics(r.run_dir)
+            f = m.dropna(subset=["tau_max"])
+            line, = ax.plot(f.steps, f.tau_max / 2, label=f"K={r.local_steps} lr={r.lr:g}")
+            g = m.dropna(subset=["tau_path"])
+            ax.plot(g.steps, g.tau_path / 2, "--", color=line.get_color())
+        ax.axhline(1, color="k", lw=0.8)
+        ax.set_title(f"alpha={a:g}")
+        ax.set_xlabel("local steps")
+    axes[0, 0].set_ylabel("round-map edge (solid: frozen, dashed: path)")
+    axes[0, 0].legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(os.path.join(out, "edge_traj.png"), dpi=150)
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("exp")
@@ -77,5 +101,6 @@ if __name__ == "__main__":
     for lr in sorted(df.lr.unique()):
         trajectories(df, out, lr)
     equilibrium_vs_K(df, out)
-    print(df.groupby(["alpha", "local_steps"])[["eq_sharp_norm", "eq_client_norm", "eq_edge"]].mean().round(3))
+    edge_trajectories(df, out)
+    print(df.groupby(["alpha", "local_steps"])[["eq_sharp_norm", "eq_client_norm", "eq_edge", "eq_path_edge"]].mean().round(3))
     print(f"saved to {out}")

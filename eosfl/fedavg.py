@@ -10,7 +10,7 @@ from .data import dirichlet_split, load_dataset
 from .eig import EigTracker
 from .functional import FlatModel
 from .models import build_model
-from .roundmap import hessian_mv, roundmap_T_mv
+from .roundmap import hessian_mv, roundmap_path_T_mv, roundmap_T_mv
 
 
 def fedavg_round(fm, w, clients, p, lr, K, server_lr, mu=0.0):
@@ -91,6 +91,9 @@ def measure(cfg, s, w, eig, row, which):
     if "roundmap" in which:
         mv = roundmap_T_mv(fm, w, s["clients"], s["p"], cfg.lr, cfg.local_steps, cfg.server_lr, cfg.prox_mu)
         row["tau_min"], row["tau_max"] = eig.extremes("T", mv, w)
+    if "path" in which:
+        mv = roundmap_path_T_mv(fm, w, s["clients"], s["p"], cfg.lr, cfg.local_steps, cfg.server_lr, cfg.prox_mu)
+        row["tau_path"], row["tau_path_im"] = eig.top_real("Tpath", mv, w)
     return row
 
 
@@ -110,6 +113,7 @@ def train(cfg, verbose=True):
         return every > 0 and (r % every == 0 or last)
 
     r, upd, status = 0, float("nan"), "budget"
+    t_train = t_measure = 0.0
     while True:
         steps = r * K
         loss, acc = fm.evaluate(w, X, Y, y)
@@ -121,24 +125,31 @@ def train(cfg, verbose=True):
         hit = cfg.target_loss > 0 and loss <= cfg.target_loss
         last = hit or r >= cfg.max_rounds or (cfg.max_steps > 0 and steps >= cfg.max_steps)
         which = [k for k, e in [("test", cfg.log_every), ("sharp", cfg.sharp_every),
-                                ("client", cfg.client_sharp_every), ("roundmap", cfg.roundmap_every)]
+                                ("client", cfg.client_sharp_every), ("roundmap", cfg.roundmap_every),
+                                ("path", cfg.roundmap_path_every)]
                  if due(e, r, last)]
         if which:
+            tm = time.time()
             log.write(measure(cfg, s, w, eig, row, which))
+            t_measure += time.time() - tm
         if verbose and (r % cfg.print_every == 0 or last):
             extra = f" sharp={row['sharpness']:.2f} (2/lr={2 / cfg.lr:.2f})" if "sharpness" in row else ""
             extra += f" tau_max/2={row['tau_max'] / 2:.3f}" if "tau_max" in row else ""
+            extra += f" path/2={row['tau_path'] / 2:.3f}" if "tau_path" in row else ""
             print(f"[{cfg.run_name()}] r={r} steps={steps} loss={loss:.4f} acc={acc:.3f}{extra}", flush=True)
         if last:
             status = "converged" if hit else "budget"
             break
+        tt = time.time()
         w, delta = fedavg_round(fm, w, s["clients"], s["p"], cfg.lr, K, cfg.server_lr, cfg.prox_mu)
         upd = delta.norm().item()
+        t_train += time.time() - tt
         r += 1
 
     log.close()
     result = {"status": status, "rounds": r, "steps": r * K, "final_train_loss": loss,
-              "seconds": round(time.time() - t0, 1)}
+              "seconds": round(time.time() - t0, 1), "t_train": round(t_train, 1),
+              "t_measure": round(t_measure, 1), "n_matvec": eig.n_mv}
     _dump(result, os.path.join(run_dir, "status.json"))
     if verbose:
         print(f"[{cfg.run_name()}] done: {result}", flush=True)

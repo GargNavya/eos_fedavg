@@ -48,6 +48,7 @@ def main():
     ap.add_argument("--jobs-per-gpu", type=int, default=4)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--rerun", action="store_true", help="ignore existing status.json")
+    ap.add_argument("--threads", type=int, default=4, help="CPU threads per job")
     a = ap.parse_args()
 
     jobs = expand(a.spec)
@@ -72,6 +73,8 @@ def main():
         try:
             os.makedirs(cfg.run_dir(), exist_ok=True)
             env = {**os.environ, "CUDA_VISIBLE_DEVICES": gpu}
+            for var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+                env[var] = str(a.threads)
             cmd = [sys.executable, os.path.join(ROOT, "scripts", "run.py"), "--config", base, "--set", *args]
             with open(os.path.join(cfg.run_dir(), "stdout.log"), "w") as out:
                 rc = subprocess.call(cmd, env=env, stdout=out, stderr=subprocess.STDOUT)

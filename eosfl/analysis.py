@@ -35,10 +35,11 @@ def load_exp(exp_dir, frac=0.3):
         st = _read_json(os.path.join(d, "status.json")) or {"status": "running"}
         m = load_metrics(d)
         row = {**cfg, **st, "run": name, "run_dir": d}
-        for col in ["sharpness", "client_sharp_max", "tau_max", "tau_min", "train_loss"]:
+        for col in ["sharpness", "client_sharp_max", "tau_max", "tau_min", "tau_path", "train_loss"]:
             row[f"eq_{col}"] = equilibrium(m[col], frac) if col in m else np.nan
         row["eq_sharp_norm"] = row["eq_sharpness"] * cfg["lr"] / 2
         row["eq_client_norm"] = row["eq_client_sharp_max"] * cfg["lr"] / 2
         row["eq_edge"] = row["eq_tau_max"] / 2
+        row["eq_path_edge"] = row["eq_tau_path"] / 2
         rows.append(row)
     return pd.DataFrame(rows)

@@ -1,0 +1,12 @@
+# Frozen vs path-linearized round map on a subset.
+base: ../configs/fedavg.yaml
+set:
+  exp: fedavg_path
+  lr: 0.02
+  client_sharp_every: 100
+  roundmap_every: 100
+  roundmap_path_every: 100
+grid:
+  alpha: [.inf, 0.1]
+  local_steps: [1, 2, 5, 10, 20]
+  seed: [0]

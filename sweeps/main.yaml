@@ -1,9 +1,11 @@
-# Weeks 2-3: H1-H3.
+# Weeks 2-3: H1-H3. First pass: 2 lrs x 2 seeds. Add seed 2 later (sweep skips finished runs).
 base: ../configs/fedavg.yaml
 set:
   exp: fedavg_main
+  client_sharp_every: 100
+  roundmap_every: 100
 grid:
   alpha: [.inf, 1.0, 0.1]
   local_steps: [1, 2, 5, 10, 20]
-  lr: [0.02, 0.04, 0.08]
-  seed: [0, 1, 2]
+  lr: [0.02, 0.04]
+  seed: [0, 1]

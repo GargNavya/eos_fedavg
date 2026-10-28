@@ -14,4 +14,5 @@ max_steps: 300
 sharp_every: 10
 client_sharp_every: 20
 roundmap_every: 20
+roundmap_path_every: 20
 print_every: 20

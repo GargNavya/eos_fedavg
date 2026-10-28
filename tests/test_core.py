@@ -11,7 +11,7 @@ from eosfl.data import dirichlet_split
 from eosfl.eig import EigTracker
 from eosfl.fedavg import fedavg_round, train
 from eosfl.functional import FlatModel
-from eosfl.roundmap import hessian_mv, roundmap_T_mv
+from eosfl.roundmap import hessian_mv, roundmap_path_T_mv, roundmap_T_mv
 from eosfl.toy import make_clients, threshold
 
 torch.set_default_dtype(torch.float64)
@@ -69,6 +69,27 @@ def test_roundmap_K1_is_lr_times_global_hessian():
     assert tmax == pytest.approx(slr * lr * lam, rel=1e-6)
 
 
+@pytest.mark.parametrize("K,slr,mu", [(1, 1.0, 0.0), (3, 0.7, 0.5)])
+def test_path_roundmap_matches_explicit_jacobian(K, slr, mu):
+    fm, w, X, Y = tiny()
+    clients, p, lr = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3], 0.3
+    J = torch.func.jacfwd(lambda u: fedavg_round(fm, u, clients, p, lr, K, slr, mu)[0])(w)
+    T = torch.eye(w.numel()) - J
+    mv = roundmap_path_T_mv(fm, w, clients, p, lr, K, slr, mu)
+    v = torch.randn_like(w)
+    assert torch.allclose(mv(v), T @ v, atol=1e-8)
+    re, _ = EigTracker(1e-10).top_real("P", mv, w)
+    assert re == pytest.approx(torch.linalg.eigvals(T).real.max().item(), abs=1e-6)
+
+
+def test_path_equals_frozen_at_K1():
+    fm, w, X, Y = tiny()
+    clients, p, lr, slr = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3], 0.3, 0.8
+    _, tmax = EigTracker(1e-10).extremes("T", roundmap_T_mv(fm, w, clients, p, lr, 1, slr), w)
+    re, _ = EigTracker(1e-10).top_real("P", roundmap_path_T_mv(fm, w, clients, p, lr, 1, slr), w)
+    assert re == pytest.approx(tmax, abs=1e-6)
+
+
 def test_fedavg_round_K1_is_gd():
     fm, w, X, Y = tiny()
     clients, p = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3]
@@ -107,3 +128,4 @@ def test_debug_run_end_to_end(tmp_path):
         rows = [json.loads(line) for line in f]
     assert any("tau_max" in r for r in rows)
     assert any("client_sharp" in r for r in rows)
+    assert any("tau_path" in r for r in rows)

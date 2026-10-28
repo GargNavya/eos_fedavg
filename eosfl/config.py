@@ -42,6 +42,7 @@ class Config:
     sharp_every: int = 10
     client_sharp_every: int = 50
     roundmap_every: int = 0
+    roundmap_path_every: int = 0
     eig_tol: float = 1e-3
     print_every: int = 100
 
