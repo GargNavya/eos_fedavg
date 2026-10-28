@@ -1,0 +1,10 @@
+# Extension: predicted FedProx edge.
+base: ../configs/fedavg.yaml
+set:
+  exp: fedprox
+  lr: 0.04
+grid:
+  alpha: [0.1]
+  local_steps: [5, 20]
+  prox_mu: [0.0, 1.0, 5.0, 20.0]
+  seed: [0, 1, 2]

@@ -1,0 +1,10 @@
+# H4.
+base: ../configs/fedavg.yaml
+set:
+  exp: fedavg_server_lr
+  lr: 0.04
+grid:
+  alpha: [.inf, 0.1]
+  local_steps: [1, 2, 5, 20]
+  server_lr: [0.5, 1.0, 1.5]
+  seed: [0, 1, 2]

@@ -1,0 +1,4 @@
+base: ../configs/debug.yaml
+grid:
+  local_steps: [1, 3]
+  alpha: [.inf, 0.5]

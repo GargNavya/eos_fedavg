@@ -1,0 +1,15 @@
+# Defaults live in eosfl/config.py; listed here for visibility.
+dataset: cifar10
+n_train: 5000
+n_test: 1000
+model: mlp
+width: 200
+depth: 2
+activation: tanh
+dtype: float32
+lr: 0.04
+server_lr: 1.0
+max_steps: 10000
+sharp_every: 10
+client_sharp_every: 50
+eig_tol: 1.0e-3

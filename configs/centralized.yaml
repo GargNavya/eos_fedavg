@@ -1,0 +1,8 @@
+# Full-batch GD = FedAvg with 1 client, K=1. Reproduces Cohen et al. EoS.
+base: base.yaml
+exp: centralized
+num_clients: 1
+local_steps: 1
+alpha: .inf
+client_sharp_every: 0
+roundmap_every: 0

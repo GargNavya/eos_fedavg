@@ -1,0 +1,13 @@
+# torch wheels built for CUDA 12.4 (airavat driver 550 supports up to 12.4)
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0
+torchvision==0.21.0
+numpy
+scipy
+matplotlib
+pandas
+pyyaml
+tqdm
+pytest
+# this repo as an editable package (run from repo root)
+-e .

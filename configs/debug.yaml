@@ -1,0 +1,17 @@
+# Seconds on CPU. Smoke test of the whole pipeline.
+base: fedavg.yaml
+exp: debug
+dataset: synthetic
+device: cpu
+n_train: 400
+n_test: 100
+num_clients: 4
+width: 32
+alpha: 0.5
+local_steps: 3
+lr: 0.2
+max_steps: 300
+sharp_every: 10
+client_sharp_every: 20
+roundmap_every: 20
+print_every: 20

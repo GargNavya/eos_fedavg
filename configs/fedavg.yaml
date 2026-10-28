@@ -1,0 +1,6 @@
+base: base.yaml
+exp: fedavg
+num_clients: 10
+alpha: .inf
+local_steps: 1
+roundmap_every: 50
