@@ -1,0 +1,11 @@
+   # K=20, lr=0.04 redo: round map off (solver does not converge at this setting).
+   base: ../configs/fedavg.yaml
+   set:
+     exp: fedavg_main
+     lr: 0.04
+     local_steps: 20
+     client_sharp_every: 100
+     roundmap_every: 0
+   grid:
+     alpha: [.inf, 1.0, 0.1]
+     seed: [0, 1]

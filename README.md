@@ -52,6 +52,9 @@ python scripts/sweep.py sweeps/main.yaml --gpus 0,1,2,3 --jobs-per-gpu 4
 
 # plots + summary.csv into $RESULTS_DIR/<exp>/_plots
 python scripts/plot.py fedavg_main
+
+# send relevant results to repo/observations/ (make sure to have run the plot.py first)
+python scripts/keep.py fedavg_main --name 01_fedavg_main
 ```
 
 ## Measured quantities

@@ -1,0 +1,2 @@
+run,status,rounds,steps,final_train_loss,seconds,t_train,t_measure,n_matvec,num_clients,alpha,local_steps,lr,server_lr,prox_mu,seed,data_seed,final_train_acc,final_test_loss,final_test_acc
+M10_a0.1_K5_lr0.02_slr1_s0,budget,400,2000,0.2687952220439911,277.3,72.9,200.9,3068,10,0.1,5,0.02,1.0,0.0,0,0,0.7825999855995178,0.4390709698200226,0.3490000069141388
