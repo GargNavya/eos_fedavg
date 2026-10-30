@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from .data import dirichlet_split, load_dataset
-from .eig import EigTracker
+from .eig import EigTracker, growth
 from .functional import FlatModel
 from .models import build_model
 from .roundmap import hessian_mv, roundmap_path_T_mv, roundmap_T_mv
@@ -91,9 +91,13 @@ def measure(cfg, s, w, eig, row, which):
     if "roundmap" in which:
         mv = roundmap_T_mv(fm, w, s["clients"], s["p"], cfg.lr, cfg.local_steps, cfg.server_lr, cfg.prox_mu)
         row["tau_min"], row["tau_max"] = eig.extremes("T", mv, w)
+        row["g_frozen"] = growth([row["tau_min"], row["tau_max"]])
     if "path" in which:
         mv = roundmap_path_T_mv(fm, w, s["clients"], s["p"], cfg.lr, cfg.local_steps, cfg.server_lr, cfg.prox_mu)
-        row["tau_path"], row["tau_path_im"] = eig.top_real("Tpath", mv, w)
+        lo, hi = eig.ends_nonsym("Tpath", mv, w)
+        row["tau_path_min"], row["tau_path_min_im"] = lo.real, lo.imag
+        row["tau_path"], row["tau_path_im"] = hi.real, hi.imag
+        row["g_path"] = growth([lo, hi])
     return row
 
 
@@ -106,7 +110,7 @@ def train(cfg, verbose=True):
     _dump(cfg.to_dict(), os.path.join(run_dir, "config.json"))
     _dump(s["split_info"], os.path.join(run_dir, "split.json"))
     log = JsonlLogger(os.path.join(run_dir, "metrics.jsonl"))
-    eig = EigTracker(cfg.eig_tol)
+    eig = EigTracker(cfg.eig_tol, cfg.eig_maxiter or None)
     K = cfg.local_steps
 
     def due(every, r, last):
@@ -135,7 +139,9 @@ def train(cfg, verbose=True):
         if verbose and (r % cfg.print_every == 0 or last):
             extra = f" sharp={row['sharpness']:.2f} (2/lr={2 / cfg.lr:.2f})" if "sharpness" in row else ""
             extra += f" tau_max/2={row['tau_max'] / 2:.3f}" if "tau_max" in row else ""
-            extra += f" path/2={row['tau_path'] / 2:.3f}" if "tau_path" in row else ""
+            K_ = cfg.local_steps
+            extra += f" ceff_frozen={(1 + row['g_frozen'] ** (1 / K_)) / 2:.3f}" if "g_frozen" in row else ""
+            extra += f" ceff_path={(1 + row['g_path'] ** (1 / K_)) / 2:.3f}" if "g_path" in row else ""
             print(f"[{cfg.run_name()}] r={r} steps={steps} loss={loss:.4f} acc={acc:.3f}{extra}", flush=True)
         if last:
             status = "converged" if hit else "budget"

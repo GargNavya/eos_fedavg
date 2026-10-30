@@ -21,8 +21,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEEP_EXT = (".png", ".csv")
 CFG_KEYS = ["num_clients", "alpha", "local_steps", "lr", "server_lr", "prox_mu", "seed", "data_seed"]
 TRAJ_COLS = ["round", "steps", "train_loss", "train_acc", "test_loss", "test_acc", "update_norm",
-             "sharpness", "client_sharp_max", "client_sharp", "tau_min", "tau_max", "tau_path", "tau_path_im"]
-MEASURED = ("sharpness", "client_sharp_max", "tau_max", "tau_path")
+             "sharpness", "client_sharp_max", "client_sharp", "tau_min", "tau_max", "g_frozen",
+             "tau_path", "tau_path_im", "tau_path_min", "tau_path_min_im", "g_path"]
+MEASURED = ("sharpness", "client_sharp_max", "tau_max", "tau_path", "g_path")
 
 
 def read_json(path):

@@ -1,12 +1,16 @@
-# Frozen vs path-linearized round map on a subset.
+# Frozen vs path-linearized round map. Cheap version: 5k local steps, ~6 round-map
+# measurements per run, ~50 global-sharpness measurements, solver capped at 6 restarts.
 base: ../configs/fedavg.yaml
 set:
   exp: fedavg_path
   lr: 0.02
-  client_sharp_every: 100
-  roundmap_every: 100
-  roundmap_path_every: 100
+  max_steps: 5000
+  eig_maxiter: 6
 grid:
   alpha: [.inf, 0.1]
-  local_steps: [1, 2, 5, 10, 20]
   seed: [0]
+cases:   # rounds = 5000 / K; measure every rounds/50 (sharpness) and rounds/5 (rest)
+  - {local_steps: 1,  sharp_every: 100, client_sharp_every: 1000, roundmap_every: 1000, roundmap_path_every: 1000}
+  - {local_steps: 2,  sharp_every: 50,  client_sharp_every: 500,  roundmap_every: 500,  roundmap_path_every: 500}
+  - {local_steps: 5,  sharp_every: 20,  client_sharp_every: 200,  roundmap_every: 200,  roundmap_path_every: 200}
+  - {local_steps: 10, sharp_every: 10,  client_sharp_every: 100,  roundmap_every: 100,  roundmap_path_every: 100}

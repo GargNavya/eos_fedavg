@@ -24,13 +24,15 @@ def expand(spec_path):
     base = os.path.join(os.path.dirname(spec_path), spec["base"])
     fixed = spec.get("set", {}) or {}
     grid = spec.get("grid", {}) or {}
+    cases = spec.get("cases") or [{}]  # list of override dicts, crossed with the grid
     keys = list(grid)
     jobs = []
-    for combo in itertools.product(*(grid[k] for k in keys)):
-        over = {**fixed, **dict(zip(keys, combo))}
-        cfg = load_config(base, over)
-        args = [f"{k}={fmt_value(v)}" for k, v in over.items()]
-        jobs.append((cfg, base, args))
+    for case in cases:
+        for combo in itertools.product(*(grid[k] for k in keys)):
+            over = {**fixed, **case, **dict(zip(keys, combo))}
+            cfg = load_config(base, over)
+            args = [f"{k}={fmt_value(v)}" for k, v in over.items()]
+            jobs.append((cfg, base, args))
     return jobs
 
 

@@ -82,6 +82,26 @@ def test_path_roundmap_matches_explicit_jacobian(K, slr, mu):
     assert re == pytest.approx(torch.linalg.eigvals(T).real.max().item(), abs=1e-6)
 
 
+@pytest.mark.parametrize("K", [2, 3])
+def test_path_both_ends_match_explicit(K):
+    fm, w, X, Y = tiny()
+    clients, p, lr = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3], 0.3
+    J = torch.func.jacfwd(lambda u: fedavg_round(fm, u, clients, p, lr, K, 1.0)[0])(w)
+    ev = torch.linalg.eigvals(torch.eye(w.numel()) - J)
+    lo, hi = EigTracker(1e-10).ends_nonsym("P", roundmap_path_T_mv(fm, w, clients, p, lr, K, 1.0), w)
+    assert lo.real == pytest.approx(ev.real.min().item(), abs=1e-6)
+    assert hi.real == pytest.approx(ev.real.max().item(), abs=1e-6)
+
+
+def test_growth_and_maxiter_cap():
+    from eosfl.eig import growth
+    assert growth([-0.5, 2.3]) == pytest.approx(1.5)
+    assert growth([0.1, float("nan")]) == pytest.approx(0.9)
+    fm, w, X, Y = tiny()
+    val = EigTracker(1e-12, maxiter=1).top("g", hessian_mv(fm, w, X, Y), w)
+    assert isinstance(val, float)  # capped solve returns a value or NaN instead of hanging
+
+
 def test_path_equals_frozen_at_K1():
     fm, w, X, Y = tiny()
     clients, p, lr, slr = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3], 0.3, 0.8
@@ -128,4 +148,5 @@ def test_debug_run_end_to_end(tmp_path):
         rows = [json.loads(line) for line in f]
     assert any("tau_max" in r for r in rows)
     assert any("client_sharp" in r for r in rows)
-    assert any("tau_path" in r for r in rows)
+    assert any("tau_path" in r and "tau_path_min" in r and "g_path" in r for r in rows)
+    assert any("g_frozen" in r for r in rows)

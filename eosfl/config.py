@@ -44,6 +44,7 @@ class Config:
     roundmap_every: int = 0
     roundmap_path_every: int = 0
     eig_tol: float = 1e-3
+    eig_maxiter: int = 0  # ARPACK restarts per solve; 0 = scipy default (no practical cap)
     print_every: int = 100
 
     def to_dict(self):
