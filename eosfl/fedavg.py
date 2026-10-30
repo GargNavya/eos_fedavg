@@ -11,6 +11,7 @@ from .eig import EigTracker, growth
 from .functional import FlatModel
 from .models import build_model
 from .roundmap import hessian_mv, roundmap_path_T_mv, roundmap_T_mv
+from .alignment import alignment
 
 
 def fedavg_round(fm, w, clients, p, lr, K, server_lr, mu=0.0):
@@ -156,6 +157,15 @@ def train(cfg, verbose=True):
     result = {"status": status, "rounds": r, "steps": r * K, "final_train_loss": loss,
               "seconds": round(time.time() - t0, 1), "t_train": round(t_train, 1),
               "t_measure": round(t_measure, 1), "n_matvec": eig.n_mv}
+    if cfg.save_final:
+        torch.save(w.detach().cpu(), os.path.join(run_dir, "final_w.pt"))
+    if cfg.align_at_end and status != "diverged":
+        ta = time.time()
+        al = alignment(fm, w, X, Y, s["clients"], s["p"], cfg.align_k, cfg.align_tol, cfg.eig_maxiter or None)
+        al.update(round=r, steps=r * K, lr=cfg.lr)
+        _dump(al, os.path.join(run_dir, "alignment.json"))
+        result["t_align"] = round(time.time() - ta, 1)
+        result["seconds"] = round(time.time() - t0, 1)
     _dump(result, os.path.join(run_dir, "status.json"))
     if verbose:
         print(f"[{cfg.run_name()}] done: {result}", flush=True)

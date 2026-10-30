@@ -96,10 +96,27 @@ def test_path_both_ends_match_explicit(K):
 def test_growth_and_maxiter_cap():
     from eosfl.eig import growth
     assert growth([-0.5, 2.3]) == pytest.approx(1.5)
-    assert growth([0.1, float("nan")]) == pytest.approx(0.9)
+    assert growth([0.1, float("nan")]) != growth([0.1, float("nan")])  # NaN if an end failed
+    assert growth([complex(-0.2, 1.0), 0.5]) == pytest.approx(abs(complex(1.2, -1.0)))
     fm, w, X, Y = tiny()
     val = EigTracker(1e-12, maxiter=1).top("g", hessian_mv(fm, w, X, Y), w)
     assert isinstance(val, float)  # capped solve returns a value or NaN instead of hanging
+
+
+def test_alignment_identity_and_overlaps():
+    from eosfl.alignment import alignment, subspace_overlap
+    fm, w, X, Y = tiny()
+    clients, p = [(X[:10], Y[:10]), (X[10:], Y[10:])], [1 / 3, 2 / 3]
+    al = alignment(fm, w, X, Y, clients, p, k=3, tol=1e-10)
+    lam = torch.linalg.eigvalsh(full_hessian(fm, w, X, Y)).flip(0)[:3]
+    assert al["lam_global"] == pytest.approx(lam.tolist(), abs=1e-6)
+    assert al["lam_global_from_rayleigh"] == pytest.approx(al["lam_global"][0], abs=1e-6)
+    assert al["weyl_sum"] >= al["lam_global"][0] - 1e-8
+    for i in range(2):
+        assert al["pairwise_overlap"][i][i] == pytest.approx(1.0, abs=1e-8)
+        assert 0 <= al["clients"][i]["overlap_with_global"] <= 1 + 1e-8
+    Q, _ = torch.linalg.qr(torch.randn(10, 3))
+    assert subspace_overlap(Q, Q) == pytest.approx(1.0)
 
 
 def test_path_equals_frozen_at_K1():
@@ -150,3 +167,15 @@ def test_debug_run_end_to_end(tmp_path):
     assert any("client_sharp" in r for r in rows)
     assert any("tau_path" in r and "tau_path_min" in r and "g_path" in r for r in rows)
     assert any("g_frozen" in r for r in rows)
+
+
+def test_align_at_end_and_checkpoint(tmp_path):
+    cfg = load_config(os.path.join(HERE, "..", "configs", "debug.yaml"),
+                      [f"results_dir={tmp_path}", "max_steps=30", "dtype=float64", "roundmap_every=0",
+                       "roundmap_path_every=0", "save_final=true", "align_at_end=true", "align_k=3"])
+    train(cfg, verbose=False)
+    with open(os.path.join(cfg.run_dir(), "alignment.json")) as f:
+        al = json.load(f)
+    assert al["lam_global_from_rayleigh"] == pytest.approx(al["lam_global"][0], rel=1e-4)
+    assert len(al["clients"]) == cfg.num_clients
+    assert os.path.exists(os.path.join(cfg.run_dir(), "final_w.pt"))

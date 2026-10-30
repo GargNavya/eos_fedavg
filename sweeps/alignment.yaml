@@ -1,0 +1,19 @@
+# Eigenvector alignment at equilibrium: global vs client Hessians (top-5 subspaces).
+# 5k local steps (equilibrium is reached by ~3k), round maps off, final parameters saved
+# so the alignment can be recomputed later with scripts/align.py.
+base: ../configs/fedavg.yaml
+set:
+  exp: fedavg_align
+  lr: 0.02
+  max_steps: 5000
+  roundmap_every: 0
+  roundmap_path_every: 0
+  save_final: true
+  align_at_end: true
+  align_k: 5
+grid:
+  alpha: [.inf, 0.1]
+  seed: [0]
+cases:   # rounds = 5000 / K; sharpness every rounds/50, client sharpness every rounds/5
+  - {local_steps: 5,  sharp_every: 20, client_sharp_every: 200}
+  - {local_steps: 10, sharp_every: 10, client_sharp_every: 100}

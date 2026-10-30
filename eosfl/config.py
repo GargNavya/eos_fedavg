@@ -46,6 +46,11 @@ class Config:
     eig_tol: float = 1e-3
     eig_maxiter: int = 0  # ARPACK restarts per solve; 0 = scipy default (no practical cap)
     print_every: int = 100
+    # end of run
+    save_final: bool = False  # write final parameters to final_w.pt
+    align_at_end: bool = False  # eigenvector alignment of global vs client Hessians -> alignment.json
+    align_k: int = 5
+    align_tol: float = 1e-4
 
     def to_dict(self):
         return asdict(self)

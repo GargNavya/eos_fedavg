@@ -1,10 +1,18 @@
-# H4.
+# H4: server step size. IID, round maps off. eta_s = 1 is reused from fedavg_main (seed 0, lr 0.02).
+# Toy predictions for the edge in global sharpness·η/2:
+#   K = 1: 1/eta_s      even K: 1      odd K > 1: (1 + |1 - 2/eta_s|^(1/K)) / 2
 base: ../configs/fedavg.yaml
 set:
   exp: fedavg_server_lr
-  lr: 0.04
+  lr: 0.02
+  alpha: .inf
+  max_steps: 10000
+  roundmap_every: 0
+  roundmap_path_every: 0
 grid:
-  alpha: [.inf, 0.1]
-  local_steps: [1, 2, 5, 20]
-  server_lr: [0.5, 1.0, 1.5]
-  seed: [0, 1, 2]
+  server_lr: [0.5, 1.5, 2.0]
+  seed: [0]
+cases:   # rounds = 10000 / K; sharpness every rounds/100, client sharpness every rounds/20
+  - {local_steps: 1, sharp_every: 100, client_sharp_every: 500}
+  - {local_steps: 2, sharp_every: 50,  client_sharp_every: 250}
+  - {local_steps: 5, sharp_every: 20,  client_sharp_every: 100}

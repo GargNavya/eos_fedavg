@@ -1,0 +1,17 @@
+# Seed 2 for the main sweep. Same grid and 10k steps; sparser measurements than seeds 0/1
+# (equilibrium = median of the last 30%, unaffected by spacing). Frozen round map off at K = 20,
+# every 200 rounds at K = 10, and solves capped at 30 restarts to bound the K = 10 cost.
+base: ../configs/fedavg.yaml
+set:
+  exp: fedavg_main
+  seed: 2
+  eig_maxiter: 30
+grid:
+  alpha: [.inf, 1.0, 0.1]
+  lr: [0.02, 0.04]
+cases:   # rounds = 10000 / K
+  - {local_steps: 1,  sharp_every: 100, client_sharp_every: 500, roundmap_every: 1000}
+  - {local_steps: 2,  sharp_every: 50,  client_sharp_every: 250, roundmap_every: 500}
+  - {local_steps: 5,  sharp_every: 20,  client_sharp_every: 100, roundmap_every: 200}
+  - {local_steps: 10, sharp_every: 10,  client_sharp_every: 50,  roundmap_every: 200}
+  - {local_steps: 20, sharp_every: 5,   client_sharp_every: 25,  roundmap_every: 0}

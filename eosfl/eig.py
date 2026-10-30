@@ -90,6 +90,9 @@ class EigTracker:
 
 
 def growth(taus):
-    """Per-round growth factor implied by eigenvalues tau of T = I - J: max |1 - tau|."""
-    vals = [abs(1 - complex(t)) for t in taus if np.isfinite(complex(t).real)]
-    return max(vals) if vals else float("nan")
+    """Per-round growth factor implied by the extreme eigenvalues tau of T = I - J: max |1 - tau|.
+    NaN if any end failed to solve (one end alone can understate the growth)."""
+    vals = [complex(t) for t in taus]
+    if not vals or any(not np.isfinite(v.real) for v in vals):
+        return float("nan")
+    return max(abs(1 - v) for v in vals)

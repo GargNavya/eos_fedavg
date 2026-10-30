@@ -94,7 +94,7 @@ if __name__ == "__main__":
             shutil.copy2(p, os.path.join(dest, f))
             report.append(f)
 
-    runs, traj, splits = [], [], {}
+    runs, traj, splits, aligns = [], [], {}, {}
     for run_dir in sorted(d for d in glob.glob(os.path.join(exp_dir, "*")) if os.path.isdir(d)):
         cfg = read_json(os.path.join(run_dir, "config.json"))
         if cfg is None:
@@ -109,6 +109,9 @@ if __name__ == "__main__":
             if "client_sharp" in t:
                 t["client_sharp"] = " ".join(f"{c:.4g}" for c in t["client_sharp"])
             traj.append(t)
+        al = read_json(os.path.join(run_dir, "alignment.json"))
+        if al:
+            aligns[name] = al
         split = read_json(os.path.join(run_dir, "split.json"))
         key = f"alpha={cfg.get('alpha')} M={cfg.get('num_clients')} data_seed={cfg.get('data_seed')}"
         if split and key not in splits:
@@ -124,6 +127,11 @@ if __name__ == "__main__":
         with open(os.path.join(dest, "splits.json"), "w") as f:
             json.dump(splits, f, indent=1)
         report.append(f"splits.json ({len(splits)} splits)")
+
+    if aligns:
+        with open(os.path.join(dest, "alignment.json"), "w") as f:
+            json.dump(aligns, f)
+        report.append(f"alignment.json ({len(aligns)} runs)")
 
     print(f"-> {os.path.relpath(dest, ROOT)}")
     for r in report:
